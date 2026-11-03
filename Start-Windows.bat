@@ -2,8 +2,8 @@
 cd /d "%~dp0"
 where py >nul 2>nul
 if %errorlevel% equ 0 (
-    py -3 app.py --open
+    py -3 start.py
 ) else (
-    python app.py --open
+    python start.py
 )
 pause

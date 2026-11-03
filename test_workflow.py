@@ -88,3 +88,40 @@ class WorkflowTests(unittest.TestCase):
         data = self.request('/api/data')
         self.assertEqual(data['organizations'][0]['name'], 'Старая организация')
         self.assertEqual(data['organizations'][0]['markup'], 20)
+
+    def test_pdf_download_and_inline_preview(self):
+        qid = self.request('/api/quotes', self.quote())['id']
+        with urlopen(self.base + '/pdf/' + str(qid)) as response:
+            self.assertEqual(response.headers['Content-Type'], 'application/pdf')
+            self.assertIn('attachment', response.headers['Content-Disposition'])
+            self.assertTrue(response.read().startswith(b'%PDF-'))
+        with urlopen(self.base + '/pdf/' + str(qid) + '?inline=1') as response:
+            self.assertIsNone(response.headers.get('Content-Disposition'))
+
+    def test_revision_conflict_preserves_saved_quote(self):
+        from urllib.error import HTTPError
+        data = self.quote()
+        saved = self.request('/api/quotes', data)
+        data.update(saved)
+        self.request('/api/quotes', data)
+        data['buyer'] = 'Не должен перезаписать'
+        with self.assertRaises(HTTPError) as error:
+            self.request('/api/quotes', data)
+        self.assertEqual(error.exception.code, 400)
+        stored = self.request('/api/quotes/' + str(saved['id']))
+        self.assertEqual(stored['buyer'], '<Клиент>')
+
+    def test_scenarios_real_tax_result(self):
+        response = self.request('/api/scenarios', dict(organization=1,purchase=107000,
+            sale_price=122000,mode='price',scenarios=[dict(organization=1,purchase_vat=7),
+                                                   dict(organization=1,purchase_vat=22)]))
+        first = response['scenarios'][0]['result']
+        self.assertEqual(first['profit'], '0.00')
+        self.assertEqual(first['vat_balance'], '15000.00')
+
+    def test_migration_creates_recoverable_backup(self):
+        backup = self.database.with_name('test.before-v3.sqlite3')
+        self.assertTrue(backup.exists())
+        with sqlite3.connect(backup) as db:
+            self.assertEqual(db.execute('PRAGMA integrity_check').fetchone()[0], 'ok')
+            self.assertEqual(db.execute('SELECT name FROM organizations').fetchone()[0], 'Старая организация')
