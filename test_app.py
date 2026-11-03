@@ -23,6 +23,6 @@ class PageEncodingTests(unittest.TestCase):
 
         page = handler.send.call_args.args[0]
         self.assertIn('КП-Мастер', page)
-        self.assertIn('Новое коммерческое предложение', page)
+        self.assertIn('Новое предложение', page)
         self.assertEqual(handler.send.call_args.kwargs['mime'],
                          'text/html; charset=utf-8')

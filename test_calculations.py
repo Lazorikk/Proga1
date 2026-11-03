@@ -24,5 +24,25 @@ class CalculationTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             calculate(1, 'NaN', 20, 0, 22, True)
 
+
+class ExtendedCalculationTests(unittest.TestCase):
+    def test_target_margin(self):
+        r = calculate(1, 100, 20, 0, 0, False, mode='margin')
+        self.assertEqual(r['price'], '125.00')
+        self.assertEqual(r['margin'], '20.00')
+
+    def test_delivery_once_for_entire_line(self):
+        r = calculate(10, 100, 0, 0, 0, False, delivery=50)
+        self.assertEqual(r['cost'], '1050.00')
+        self.assertEqual(r['price'], '105.00')
+
+    def test_manual_price_loss(self):
+        r = calculate(1, 100, 0, 0, 0, False, mode='price', sale_price=90)
+        self.assertEqual(r['profit'], '-10.00')
+
+    def test_invalid_margin(self):
+        with self.assertRaises(ValueError):
+            calculate(1, 100, 100, 0, 0, False, mode='margin')
+
 if __name__ == '__main__':
     unittest.main()
