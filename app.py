@@ -46,7 +46,7 @@ class Handler(BaseHTTPRequestHandler):
         path = urlparse(self.path).path
         with connect() as db:
             if path == '/':
-                return self.send((ROOT / 'templates/index.html').read_text(), mime='text/html; charset=utf-8')
+                return self.send((ROOT / 'templates/index.html').read_text(encoding='utf-8'), mime='text/html; charset=utf-8')
             if path == '/api/data':
                 return self.send(json.dumps(dict(
                     organizations=[dict(r) for r in db.execute('SELECT * FROM organizations')],
